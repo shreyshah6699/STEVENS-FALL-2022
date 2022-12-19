@@ -1,0 +1,296 @@
+README Section
+---------------
+Query #3 will take 15-17 seconds to execute.
+
+---------------
+Question - 1
+---------------
+with average_sale as(
+	select cust, prod, month, state, round(avg(quant)) as cust_avg
+	from sales
+	group by cust, prod, month, state
+),
+
+all_other_products as(
+	select s1.cust, s1.prod, s1.month, s1.state, round(avg(s2.quant)) as prod_avg
+	from sales s1, sales s2
+	where s1.cust = s2.cust and s1.prod != s2.prod and s1.month = s2.month and s1.state = s2.state
+	group by s1.cust, s1.prod, s1.month, s1.state
+),
+
+all_other_months as(
+	select s1.cust, s1.prod, s1.month, s1.state, round(avg(s2.quant)) as month_avg
+	from sales s1, sales s2
+	where s1.cust = s2.cust and s1.prod = s2.prod and s1.month != s2.month and s1.state = s2.state
+	group by s1.cust, s1.prod, s1.month, s1.state
+),
+
+all_other_states as(
+	select s1.cust, s1.prod, s1.month, s1.state, round(avg(s2.quant)) as state_avg
+	from sales s1, sales s2
+	where s1.cust = s2.cust and s1.prod = s2.prod and s1.month = s2.month and s1.state != s2.state
+	group by s1.cust, s1.prod, s1.month, s1.state
+)
+
+select average_sale.cust as "CUSTOMER", average_sale.prod as "PRODUCT", average_sale.month as "MONTH", average_sale.state as "STATE", 
+       average_sale.cust_avg as "CUST_AVG", all_other_products.prod_avg as "OTHER_PROD_AVG", all_other_months.month_avg as "OTHER_MONTH_AVG", 
+	   all_other_states.state_avg as "OTHER_STATE_AVG"
+from average_sale join all_other_products 
+using(cust,prod,state,month)
+join all_other_months
+using(cust,prod,state,month)
+join all_other_states
+using(cust,prod,state,month)
+---------------
+Question - 2
+---------------
+with base as (
+	select cust, prod, state
+ 	from sales 
+ 	group by cust, prod, state
+), 
+
+m1 as (
+	select cust, prod, state, round(avg(quant)) as quant 
+ 	from sales where month = 1 
+ 	group by cust, prod, state
+), 
+
+m2 as (
+	select cust, prod, state, round(avg(quant)) as quant 
+ 	from sales where month = 2 
+ 	group by cust, prod, state
+), 
+
+m3 as (
+	select cust, prod, state, round(avg(quant)) as quant 
+ 	from sales where month = 3
+ 	group by cust, prod, state
+), 
+
+m4 as (
+	select cust, prod, state, round(avg(quant)) as quant 
+ 	from sales where month = 4
+ 	group by cust, prod, state
+), 
+
+m5 as (
+	select cust, prod, state, round(avg(quant)) as quant 
+ 	from sales where month = 5 
+ 	group by cust, prod, state
+), 
+
+m6 as (
+	select cust, prod, state, round(avg(quant)) as quant 
+ 	from sales where month = 6
+ 	group by cust, prod, state
+), 
+
+m7 as (
+	select cust, prod, state, round(avg(quant)) as quant 
+ 	from sales where month = 7
+ 	group by cust, prod, state
+), 
+
+m8 as (
+	select cust, prod, state, round(avg(quant)) as quant 
+ 	from sales where month = 8
+ 	group by cust, prod, state
+), 
+
+m9 as (
+	select cust, prod, state, round(avg(quant)) as quant 
+ 	from sales where month = 9 
+ 	group by cust, prod, state
+), 
+
+m10 as (
+	select cust, prod, state, round(avg(quant)) as quant 
+ 	from sales where month = 10 
+ 	group by cust, prod, state
+), 
+
+m11 as (
+	select cust, prod, state, round(avg(quant)) as quant 
+ 	from sales where month = 11
+ 	group by cust, prod, state
+), 
+
+m12 as (
+	select cust, prod, state, round(avg(quant)) as quant 
+ 	from sales where month = 12 
+ 	group by cust, prod, state
+), 
+
+before_after_m1 as ( 
+	select b.cust, b.prod, b.state, cast('1' as int) as "MO", cast(null as numeric) as before_avg, m2.quant as after_avg 
+ 	from base as b left join m2 
+ 	using(cust, prod, state)
+), 
+
+before_after_m2 as ( 
+	select b.cust, b.prod, b.state, cast('2' as int) as "MO", m1.quant as before_avg, m3.quant as after_avg 
+ 	from base as b left join m1 
+ 	using(cust, prod, state)
+	left join m3 
+ 	using(cust, prod, state)
+), 
+
+before_after_m3 as ( 
+	select b.cust, b.prod, b.state, cast('3' as int) as "MO", m2.quant as before_avg, m4.quant as after_avg 
+ 	from base as b left join m2 
+ 	using(cust, prod, state)
+	left join m4
+ 	using(cust, prod, state)
+), 
+
+before_after_m4 as ( 
+	select b.cust, b.prod, b.state, cast('4' as int) as "MO", m3.quant as before_avg, m5.quant as after_avg 
+ 	from base as b left join m3
+ 	using(cust, prod, state)
+	left join m5
+ 	using(cust, prod, state)
+), 
+
+before_after_m5 as ( 
+	select b.cust, b.prod, b.state, cast('5' as int) as "MO", m4.quant as before_avg, m6.quant as after_avg 
+ 	from base as b left join m4
+ 	using(cust, prod, state)
+	left join m6
+ 	using(cust, prod, state)
+), 
+
+before_after_m6 as ( 
+	select b.cust, b.prod, b.state, cast('6' as int) as "MO", m5.quant as before_avg, m7.quant as after_avg 
+ 	from base as b left join m5
+ 	using(cust, prod, state)
+	left join m7
+ 	using(cust, prod, state)
+), 
+
+before_after_m7 as ( 
+	select b.cust, b.prod, b.state, cast('7' as int) as "MO", m6.quant as before_avg, m8.quant as after_avg 
+ 	from base as b left join m6
+ 	using(cust, prod, state)
+	left join m8
+ 	using(cust, prod, state)
+), 
+
+before_after_m8 as ( 
+	select b.cust, b.prod, b.state, cast('8' as int) as "MO", m7.quant as before_avg, m9.quant as after_avg 
+ 	from base as b left join m7
+ 	using(cust, prod, state)
+	left join m9
+ 	using(cust, prod, state)
+), 
+
+before_after_m9 as ( 
+	select b.cust, b.prod, b.state, cast('9' as int) as "MO", m8.quant as before_avg, m10.quant as after_avg 
+ 	from base as b left join m8
+ 	using(cust, prod, state)
+	left join m10
+ 	using(cust, prod, state)
+), 
+
+before_after_m10 as ( 
+	select b.cust, b.prod, b.state, cast('10' as int) as "MO", m9.quant as before_avg, m11.quant as after_avg 
+ 	from base as b left join m9
+ 	using(cust, prod, state)
+	left join m11
+ 	using(cust, prod, state)
+),
+
+before_after_m11 as ( 
+	select b.cust, b.prod, b.state, cast('11' as int) as "MO", m10.quant as before_avg, m12.quant as after_avg 
+ 	from base as b left join m10
+ 	using(cust, prod, state)
+	left join m12
+ 	using(cust, prod, state)
+),
+
+before_after_m12 as ( 
+	select b.cust, b.prod, b.state, cast('12' as int) as "MO", m11.quant as before_avg, cast(null as numeric) as after_avg
+ 	from base as b left join m11
+ 	using(cust, prod, state)
+),
+
+results as (
+	select * from before_after_m1 
+	union 
+  	select * from before_after_m2
+ 	union 
+ 	select * from before_after_m3
+ 	union 
+	select * from before_after_m4
+	union
+	select * from before_after_m5
+	union 
+  	select * from before_after_m6
+ 	union 
+ 	select * from before_after_m7
+ 	union 
+	select * from before_after_m8
+	union
+	select * from before_after_m9
+	union 
+  	select * from before_after_m10
+ 	union 
+ 	select * from before_after_m11
+ 	union 
+	select * from before_after_m12
+)
+
+select cust "CUSTOMER", prod "PRODUCT", state "STATE", "MO", before_avg "BEFORE_AVG", after_avg "AFTER_AVG"
+from results 
+---------------
+Question - 3
+---------------
+with counts as (
+	select s.prod, s.quant, (select count(*) 
+							 from sales 
+							 where quant <= s.quant and prod = s.prod)
+	from sales s
+),
+
+middle_points as (
+	select counts.prod, (max(count)/2 + 1) as middle_point
+	from counts
+	group by prod
+),
+
+results as (
+	select counts.prod, counts.quant
+	from counts, middle_points
+	where counts.prod = middle_points.prod and counts.count >= middle_points.middle_point
+)
+
+select results.prod as "PRODUCT", min(results.quant) as "MEDIAN QUANT"
+from results
+group by prod
+---------------
+Question - 4
+---------------
+with monthly_sales as (
+	select cust, prod, month, sum(quant) as monthly_sale
+	from sales
+	group by cust, prod, month
+),
+
+aggregate_sales as (
+	select ms1.cust, ms1.prod, ms1.month, sum(ms2.monthly_sale) as aggregate_sale
+	from monthly_sales as ms1, monthly_sales as ms2
+	where ms1.cust = ms2.cust AND ms1.prod = ms2.prod AND ms1.month >= ms2.month
+	group by ms1.cust, ms1.prod, ms1.month
+),
+
+results as (
+	select cust, prod, sum(quant)*0.75 as "75%"
+	from sales
+	group by cust, prod
+)
+
+select aggregate_sales.cust as "CUSTOMER", aggregate_sales.prod as "PRODUCT", 
+		min(aggregate_sales.month) as "75% PURCHASED BY MONTH"
+from aggregate_sales, results
+where aggregate_sales.cust = results.cust and aggregate_sales.prod = results.prod and aggregate_sale >= "75%"
+group by aggregate_sales.cust, aggregate_sales.prod

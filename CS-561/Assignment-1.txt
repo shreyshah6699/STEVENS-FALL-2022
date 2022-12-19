@@ -1,0 +1,175 @@
+Question - 1
+---------------
+with
+MAX_QUAN as
+(select max.prod as product,max.quant as MAX_Q,max.cust as max_cust,max.day,max.month,max.year,max.state from (select prod, max(quant) as MAX_Q from sales group by prod) as a
+left join
+(select * from sales) as max
+on max.prod=a.prod and max.quant=a.MAX_Q),
+
+MIN_QUAN as
+(select min.prod as product,min.quant as min_q,min.cust as min_cust,min.day,min.month,min.year,min.state from (select prod, min(quant) as min_q from sales group by prod) as b
+left join
+(select * from sales) as min
+on min.prod=b.prod and min.quant=b.min_q),	
+
+AVG_QUAN as
+(select avg(quant) as avg_q,prod from sales group by prod)
+select MAX_QUAN.product,MAX_QUAN.MAX_Q,MAX_QUAN.max_cust,concat(MAX_QUAN.month,'/',MAX_QUAN.day,'/',MAX_QUAN.year) as max_date,MAX_QUAN.state,MIN_QUAN.min_q,MIN_QUAN.min_cust,concat(MIN_QUAN.month,'/',MIN_QUAN.day,'/',MIN_QUAN.year) as min_date,MIN_QUAN.state,AVG_QUAN.avg_q
+from MAX_QUAN join MIN_QUAN on MAX_QUAN.product=MIN_QUAN.product join AVG_QUAN on AVG_QUAN.prod=MAX_QUAN.product
+order by prod
+---------------
+Question - 2
+---------------
+WITH CustProd AS (
+    SELECT DISTINCT cust, prod
+    FROM sales
+),
+N_S AS (
+    SELECT *, ROW_NUMBER() OVER (PARTITION BY cust, prod ORDER BY quant DESC) rn
+    FROM sales
+    WHERE state = 'NY'
+),
+NJ_S AS (
+            SELECT *, ROW_NUMBER() OVER (PARTITION BY cust, prod ORDER BY quant) rn
+    FROM sales
+    WHERE state = 'NJ' and date > '2000-12-31'
+),
+C_S AS (
+            SELECT *, ROW_NUMBER() OVER (PARTITION BY cust, prod ORDER BY quant) rn
+    FROM sales
+    WHERE state = 'CT' and date > '2000-12-31'
+)
+SELECT
+    CP.cust,
+    CP.prod,
+    NEWY_S.quant AS ny_max,
+    NEWY_S.year::text || '-' || NEWY_S.month::text || '-' || NEWY_S.day::text AS date,
+    NEWJ_S.quant AS nj_min,
+    NEWJ_S.year::text || '-' || NEWJ_S.month::text || '-' || NEWJ_S.day::text AS date,
+    CT_S.quant AS ct_min,
+    CT_S.year::text || '-' || CT_S.month::text || '-' || CT_S.day::text AS date
+FROM CustProd CP
+LEFT JOIN N_S NEWY_S
+    ON CP.cust = NEWY_S.cust AND CP.prod = NEWY_S.prod AND NEWY_S.rn = 1
+LEFT JOIN NJ_S NEWJ_S
+    ON CP.cust = NEWJ_S.cust AND CP.prod = NEWJ_S.prod AND NEWJ_S.rn = 1
+LEFT JOIN C_S CT_S
+    ON CP.cust = CT_S.cust AND CP.prod = CT_S.prod AND CT_S.rn = 1
+ORDER BY
+    CP.cust,
+	CP.prod;
+---------------
+Question - 3
+---------------
+with SS as(
+    select month, state, sum(quant) as SUM_Q
+	from sales
+	group by month, state
+),
+
+M_M as(
+	select SS.month, max(SS.SUM_Q) as MOST_TOTAL_Q, min(SS.SUM_Q) as LEAST_TOTAL_Q
+	from SS
+	group by SS.month
+),
+
+M_P as(
+	select SS.month, SS.state as MOST_POPULAR_STATE, M_M.MOST_TOTAL_Q as MOST_POP_TOTAL_Q
+	from SS
+	join M_M
+	on SS.month = M_M.month and SS.SUM_Q = M_M.MOST_TOTAL_Q
+),
+
+L_P as(
+	select SS.month, SS.state as LEAST_POPULAR_STATE, M_M.LEAST_TOTAL_Q as LEAST_POP_TOTAL_Q
+	from SS
+	join M_M
+	on SS.month = M_M.month and SS.SUM_Q = M_M.LEAST_TOTAL_Q
+)
+
+select M_P.month, M_P.MOST_POPULAR_STATE, M_P.MOST_POP_TOTAL_Q, L_P.LEAST_POPULAR_STATE, L_P.LEAST_POP_TOTAL_Q
+from M_P join L_P
+on M_P.month = L_P.month
+order by month
+---------------
+Question - 4
+---------------
+with SS as(
+	select cust, prod, state, sum(quant) as SUM_Q
+	from sales
+	group by cust, prod, state
+),
+
+M_M as(
+	select SS.cust, max(SS.SUM_Q) as MOST_TOTAL_Q, min(SS.SUM_Q) as LEAST_TOTAL_Q
+	from SS
+	group by SS.cust
+),
+
+M_F as(
+	select SS.cust, SS.prod, SS.state
+	from SS join M_M
+	on SS.cust = M_M.cust and SS.SUM_Q = M_M.MOST_TOTAL_Q
+),
+
+L_V as(
+	select SS.cust, SS.prod, SS.state
+	from SS join M_M
+	on SS.cust = M_M.cust and SS.SUM_Q = M_M.LEAST_TOTAL_Q
+)
+
+select M_F.cust as CUSTOMER, M_F.prod as MOST_FAV_PROD,L_V.prod as LEAST_FAV_PROD, M_F.state as MOST_FAV_ST, L_V.state as LEAST_FAV_ST
+from M_F join L_V
+on M_F.cust = L_V.cust
+order by CUSTOMER
+---------------
+Question - 5
+---------------
+with AL as(
+	select prod, cust, avg(quant) as Average, sum(quant) as Total, count(quant) as Count
+	from sales
+	group by prod, cust
+),
+
+Q1 as(
+	select prod, cust, sum(quant) as  Q1_T
+	from sales
+	where month between 1 and 3
+	group by prod, cust
+),
+
+Q2 as(
+	select prod, cust, sum(quant) as Q2_T
+	from sales
+	where month between 4 and 6
+	group by prod, cust
+),
+
+Q3 as(
+	select prod, cust, sum(quant) as Q3_T
+	from sales
+	where month between 7 and 9
+	group by prod, cust
+),
+
+Q4 as(
+	select prod, cust, sum(quant) as Q4_T
+	from sales
+	where month between 10 and 12
+	group by prod, cust
+)
+
+select  AL.cust as Customer, AL.prod as Product, 
+		Q1_T, Q2_T, Q3_T, Q4_T, 
+		round(AL.Average) as Average, AL.Total, AL.Count
+from AL
+join Q1
+on AL.cust = Q1.cust and AL.prod = Q1.prod
+join Q2
+on AL.cust = Q2.cust and AL.prod = Q2.prod
+join Q3
+on AL.cust = Q3.cust and AL.prod = Q3.prod
+join Q4
+on AL.cust = Q4.cust and AL.prod = Q4.prod
+group by PRODUCT, CUSTOMER, Q1.Q1_T, Q2.Q2_T, Q3.Q3_T, Q4.Q4_T, Average, Total, Count
